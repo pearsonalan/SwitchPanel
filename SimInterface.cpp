@@ -26,7 +26,7 @@ static void CALLBACK SimDispatchProc(SIMCONNECT_RECV* pData, DWORD cbData, void*
 #define CHECK_OR_FAIL(f) { \
   HRESULT hr = (f); \
   if (!SUCCEEDED(hr)) { \
-    winfx::DebugOut(L"Error adding to data definition: %08x", hr); \
+	winfx::DebugOut(L"Error adding to data definition: %08x", hr); \
 	return hr; \
   } \
 }

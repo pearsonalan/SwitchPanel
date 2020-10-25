@@ -24,7 +24,7 @@
 UINT const WMAPP_NOTIFYCALLBACK = WM_APP + 1;
 
 #define HANDLE_WMAPP_NOTIFYCALLBACK(hwnd, wParam, lParam, fn) \
-    ((fn)((hwnd), (DWORD)LOWORD(lParam), winfx::Point(LOWORD(wParam), HIWORD(wParam))), 0L)
+	((fn)((hwnd), (DWORD)LOWORD(lParam), winfx::Point(LOWORD(wParam), HIWORD(wParam))), 0L)
 
 constexpr int kReportsPerSecond = 4;
 constexpr int kPollTimerIntervalMs = 1000 / kReportsPerSecond;
