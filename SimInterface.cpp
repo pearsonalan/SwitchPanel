@@ -64,12 +64,16 @@ HRESULT SimulatorInterface::buildDefinition() {
 	CHECK_OR_FAIL(SimConnect_AddToDataDefinition(sim_, DEFINITION_1, "GPS POSITION LON", "degrees"));
 	CHECK_OR_FAIL(SimConnect_AddToDataDefinition(sim_, DEFINITION_1, "GPS GROUND TRUE TRACK", "degrees"));
 	CHECK_OR_FAIL(SimConnect_AddToDataDefinition(sim_, DEFINITION_1, "GPS GROUND SPEED", "meters per second"));
+	CHECK_OR_FAIL(SimConnect_AddToDataDefinition(sim_, DEFINITION_1, "AIRSPEED INDICATED", "knots"));
 	CHECK_OR_FAIL(SimConnect_AddToDataDefinition(sim_, DEFINITION_1, "PLANE PITCH DEGREES", "degrees"));
 	CHECK_OR_FAIL(SimConnect_AddToDataDefinition(sim_, DEFINITION_1, "PLANE BANK DEGREES", "degrees"));
 	CHECK_OR_FAIL(SimConnect_AddToDataDefinition(sim_, DEFINITION_1, "PLANE HEADING DEGREES TRUE", "degrees"));
 	CHECK_OR_FAIL(SimConnect_AddToDataDefinition(sim_, DEFINITION_1, "AUTOPILOT HEADING LOCK DIR", "degrees"));
 	CHECK_OR_FAIL(SimConnect_AddToDataDefinition(sim_, DEFINITION_1, "LIGHT LANDING ON", "bool", SIMCONNECT_DATATYPE_INT32));
 	CHECK_OR_FAIL(SimConnect_AddToDataDefinition(sim_, DEFINITION_1, "LIGHT TAXI ON", "bool", SIMCONNECT_DATATYPE_INT32));
+	CHECK_OR_FAIL(SimConnect_AddToDataDefinition(sim_, DEFINITION_1, "GEAR LEFT POSITION", "percent over 100", SIMCONNECT_DATATYPE_FLOAT64));
+	CHECK_OR_FAIL(SimConnect_AddToDataDefinition(sim_, DEFINITION_1, "GEAR CENTER POSITION", "percent over 100", SIMCONNECT_DATATYPE_FLOAT64));
+	CHECK_OR_FAIL(SimConnect_AddToDataDefinition(sim_, DEFINITION_1, "GEAR RIGHT POSITION", "percent over 100", SIMCONNECT_DATATYPE_FLOAT64));
 	return S_OK;
 }
 
@@ -81,6 +85,10 @@ HRESULT SimulatorInterface::defineEvents() {
 	CHECK_OR_FAIL(SimConnect_MapClientEventToSimEvent(sim_, SimEventTaxiLightsOff, "TOGGLE_TAXI_LIGHTS"));
 	CHECK_OR_FAIL(SimConnect_MapClientEventToSimEvent(sim_, SimEventHeadingBugInc, "HEADING_BUG_INC"));
 	CHECK_OR_FAIL(SimConnect_MapClientEventToSimEvent(sim_, SimEventHeadingBugDec, "HEADING_BUG_DEC"));
+	CHECK_OR_FAIL(SimConnect_MapClientEventToSimEvent(sim_, SimEventNav1ObsInc, "VOR1_OBI_INC"));
+	CHECK_OR_FAIL(SimConnect_MapClientEventToSimEvent(sim_, SimEventNav1ObsDec, "VOR1_OBI_DEC"));
+	CHECK_OR_FAIL(SimConnect_MapClientEventToSimEvent(sim_, SimEventGearUp, "GEAR_UP"));
+	CHECK_OR_FAIL(SimConnect_MapClientEventToSimEvent(sim_, SimEventGearDown, "GEAR_DOWN"));
 	return S_OK;
 }
 

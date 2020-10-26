@@ -28,12 +28,10 @@
 #include <SimConnect.h>
 
 // C RunTime Header Files
-#include <stdlib.h>
-#include <malloc.h>
-#include <memory.h>
 #include <tchar.h>
 
 // C++ Header Files
 #include <string>
 #include <map>
 #include <vector>
+#include <cmath>

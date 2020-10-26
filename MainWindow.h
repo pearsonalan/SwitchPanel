@@ -35,7 +35,7 @@ public:
 
 	virtual LRESULT handleWindowMessage(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) override;
 	virtual winfx::Size getDefaultWindowSize() override {
-		return winfx::Size(400, 380);
+		return winfx::Size(400, 450);
 	}
 
 	LRESULT onCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct) override;

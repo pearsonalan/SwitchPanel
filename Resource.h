@@ -29,6 +29,11 @@
 #define IDM_TAXI_LIGHTS_OFF			33006
 #define IDM_HEADING_BUG_INC			33007
 #define IDM_HEADING_BUG_DEC			33008
+#define IDM_NAV1_OBS_INC			33009
+#define IDM_NAV1_OBS_DEC			33010
+#define IDM_GEAR_UP					33011
+#define IDM_GEAR_DOWN				33012
+
 #define IDM_ABOUT					34000
 #define IDM_SHOWWINDOW              34001
 

@@ -33,7 +33,11 @@ enum SimulatorEvent {
 	SimEventTaxiLightsOn,
 	SimEventTaxiLightsOff,
 	SimEventHeadingBugInc,
-	SimEventHeadingBugDec
+	SimEventHeadingBugDec,
+	SimEventNav1ObsInc,
+	SimEventNav1ObsDec,
+	SimEventGearUp,
+	SimEventGearDown
 };
 
 class SimulatorCallbacks {

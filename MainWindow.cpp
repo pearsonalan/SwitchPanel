@@ -124,6 +124,10 @@ void MainWindow::onCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify) {
 	case IDM_TAXI_LIGHTS_OFF:
 	case IDM_HEADING_BUG_INC:
 	case IDM_HEADING_BUG_DEC:
+	case IDM_NAV1_OBS_INC:
+	case IDM_NAV1_OBS_DEC:
+	case IDM_GEAR_UP:
+	case IDM_GEAR_DOWN:
 		sim_.sendEvent(static_cast<SimulatorEvent>(id - IDM_LANDING_LIGHTS_ON));
 		break;
 	}
@@ -189,6 +193,18 @@ private:
 	int posy_ = 40;
 };
 
+constexpr double kFeetPerMeter = 3.28084;
+constexpr double kFeetPerNauticalMile = 6076.12;
+constexpr double kSecondsPerHour = 3600;
+
+inline double MetersToFeet(double meters) {
+	return meters * kFeetPerMeter;
+}
+
+inline double FeetToNauticalMiles(double feet) {
+	return feet / kFeetPerNauticalMile;
+}
+
 void MainWindow::onPaint(HWND hwnd) {
 	PAINTSTRUCT ps;
 	HDC hdc = BeginPaint(hwnd, &ps);
@@ -212,11 +228,16 @@ void MainWindow::onPaint(HWND hwnd) {
 	if (data) {
 		TextOutput out(hdc);
 		SetTextColor(hdc, RGB(0, 0, 0));
-		out.DrawAttribute(L"GPS ALT: %0.2f m", data->gps_alt);
+		out.DrawAttribute(L"GPS ALT: %d ft", 
+			static_cast<int>(std::round(MetersToFeet(data->gps_alt))));
 		out.DrawAttribute(L"GPS LAT: %0.4f", data->gps_lat);
 		out.DrawAttribute(L"GPS LON: %0.4f", data->gps_lon);
 		out.DrawAttribute(L"GPS TRK: %0.1f", data->gps_track);
-		out.DrawAttribute(L"GPS GS:  %0.1f m/s", data->gps_groundspeed);
+		out.DrawAttribute(L"GPS GS:  %0.1f kts", 
+			FeetToNauticalMiles(MetersToFeet(data->gps_groundspeed)) * kSecondsPerHour);
+
+		out.Advance(10);
+		out.DrawAttribute(L"IAS:     %0.1f kts", data->indicated_airspeed);
 
 		out.Advance(10);
 		out.DrawAttribute(L"PITCH:   %0.3f", data->pitch);
@@ -227,6 +248,12 @@ void MainWindow::onPaint(HWND hwnd) {
 		out.Advance(10);
 		out.DrawAttribute(L"LANDING: %s", data->landing_light_on ? L"ON" : L"OFF");
 		out.DrawAttribute(L"TAXI:    %s", data->taxi_light_on ? L"ON" : L"OFF");
+
+		wchar_t gear_pos[1024];
+		_snwprintf_s(gear_pos, 1023, _TRUNCATE, L"L:%03.1f C:%03.1f R:%03.1f", 
+			data->gear_left_position, data->gear_center_position, data->gear_right_position);
+		out.Advance(10);
+		out.DrawAttribute(L"GEAR:    %s", gear_pos);
 	}
 
 	DeleteObject(hFont);

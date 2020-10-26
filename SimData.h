@@ -21,10 +21,14 @@ struct SimData {
 	double gps_lon = 0;
 	double gps_track = 0;
 	double gps_groundspeed = 0;
+	double indicated_airspeed = 0;
 	double pitch = 0;
 	double bank = 0;
 	double heading = 0;
 	double heading_bug = 0;
 	INT32 landing_light_on = 0;
 	INT32 taxi_light_on = 0;
+	double gear_left_position = 0;
+	double gear_center_position = 0;
+	double gear_right_position = 0;
 };
