@@ -4,8 +4,9 @@
 
 #include "Protocol.h"
 
-constexpr char kSwitchMessage[] = "SW";
 constexpr char kHelloMessage[] = "HELO";
+constexpr char kSwitchMessage[] = "SW";
+constexpr char kLedMessage[] = "LD";
 
 std::string ProtocolMessage::toString() const {
     switch (message_type_) {
@@ -15,6 +16,10 @@ std::string ProtocolMessage::toString() const {
         return std::string(kSwitchMessage) + std::string(1, '0' + component_) + "1";
     case MessageType::SwitchOff:
         return std::string(kSwitchMessage) + std::string(1, '0' + component_) + "0";
+    case MessageType::LedOn:
+        return std::string(kLedMessage) + std::string(1, '0' + component_) + "1";
+    case MessageType::LedOff:
+        return std::string(kLedMessage) + std::string(1, '0' + component_) + "0";
     default:
         return std::string();
     }
@@ -62,6 +67,15 @@ ProtocolMessage Protocol::parseMessage(int len) {
                       (input_buffer_[3] == '0') ? MessageType::SwitchOff : MessageType::SwitchOn,
                       input_buffer_[2] - '0');
     }
+    else if (len == 4 &&
+        memcmp(input_buffer_, kLedMessage, 2) == 0 &&
+        isdigit(input_buffer_[2]) &&
+        (input_buffer_[3] == '0' || input_buffer_[3] == '1')) {
+        message = ProtocolMessage(
+                      (input_buffer_[3] == '0') ? MessageType::LedOff : MessageType::LedOn,
+                      input_buffer_[2] - '0');
+    }
+
 
     return message;
 }

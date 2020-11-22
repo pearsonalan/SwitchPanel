@@ -24,6 +24,8 @@ void TestMessageToString() {
     EXPECT(ProtocolMessage(MessageType::Hello).toString() == "HELO");
     EXPECT(ProtocolMessage(MessageType::SwitchOn, 1).toString() == "SW11");
     EXPECT(ProtocolMessage(MessageType::SwitchOff, 4).toString() == "SW40");
+    EXPECT(ProtocolMessage(MessageType::LedOn, 0).toString() == "LD01");
+    EXPECT(ProtocolMessage(MessageType::LedOff, 0).toString() == "LD00");
     END_TEST();
 }
 
@@ -115,7 +117,7 @@ void TestMultipleMessages() {
     ProtocolResult result;
     ProtocolMessage message;
 
-    result = protocol.addBytes("HELO\nSW11\nSW91\n", 15);
+    result = protocol.addBytes("HELO\nSW11\nLD91\n", 15);
     EXPECT(result == ProtocolResult::Ok);
     EXPECT(protocol.hasMessage());
 
@@ -129,7 +131,7 @@ void TestMultipleMessages() {
     EXPECT(protocol.hasMessage());
 
     message = protocol.getMessage();
-    EXPECT(message.message_type() == MessageType::SwitchOn);
+    EXPECT(message.message_type() == MessageType::LedOn);
     EXPECT(message.component() == 9);
     EXPECT(!protocol.hasMessage());
 

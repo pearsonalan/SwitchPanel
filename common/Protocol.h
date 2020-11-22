@@ -8,6 +8,8 @@ enum class MessageType {
     Hello = 0,
     SwitchOn,
     SwitchOff,
+    LedOn,
+    LedOff,
 };
 
 enum class ProtocolResult {
