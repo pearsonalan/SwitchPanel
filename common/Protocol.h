@@ -1,11 +1,19 @@
 #ifndef _Protocol_h_
 #define _Protocol_h_
 
+#ifdef ARDUINO
+#include <WString.h>
+using string = String;
+#else
 #include <string>
+using string = std::string;
+#endif
 
 enum class MessageType {
     Invalid = -1,
     Hello = 0,
+    StatusBegin,
+    StatusEnd,
     SwitchOn,
     SwitchOff,
     LedOn,
@@ -30,7 +38,7 @@ public:
 
     MessageType message_type() const { return message_type_; }
     int component() const { return component_; }
-    std::string toString() const;
+    string toString() const;
 
 private:
     MessageType message_type_ = MessageType::Invalid;

@@ -23,7 +23,8 @@ CPPFLAGS=-g -Os -fno-exceptions -ffunction-sections -fdata-sections -fno-threads
 DEFINES=-DF_CPU=16000000L -DARDUINO=10604 -DARDUINO_AVR_UNO -DARDUINO_ARCH_AVR
 INCLUDES=-I$(ARDUINO_HOME)/hardware/arduino/avr/cores/arduino \
         -I$(ARDUINO_HOME)/hardware/arduino/avr/variants/standard \
-        -I$(ARDUINO_HOME)/libraries/Servo/src
+        -I$(ARDUINO_HOME)/libraries/Servo/src \
+		-I../common
 
 OBJDIR=obj
 
@@ -42,7 +43,7 @@ CORE_OBJS= \
 
 CORE_LIB=$(OBJDIR)/ArduinoCore.a
 
-OBJS=$(OBJDIR)/$(PROG).o
+OBJS:=$(OBJDIR)/$(PROG).o $(OBJS)
 ELF=$(OBJDIR)/$(PROG).elf
 EEP=$(OBJDIR)/$(PROG).eep
 HEX=$(OBJDIR)/$(PROG).hex
@@ -76,9 +77,12 @@ $(CORE_LIB): $(CORE_OBJS)
 upload: $(EEP) $(HEX)
 	$(AVRDUDE) -C$(ARDUINO_HOME)/hardware/tools/avr/etc/avrdude.conf -v -p$(MCU) -carduino -P$(PORT) -b$(BAUD) -D -Uflash:w:$(HEX):i 
 
-$(PROG).o: $(PROG).cpp
+$(PROG).o: $(PROG).cc
 
-$(OBJDIR)/%.o: %.cpp
+$(OBJDIR)/%.o: %.cc
+	$(CPP) -c $(CPPFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<
+
+$(OBJDIR)/%.o: ../common/%.cc
 	$(CPP) -c $(CPPFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<
 
 $(OBJDIR)/%.o: $(ARDUINO_SRC)/%.cpp

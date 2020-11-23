@@ -1,27 +1,41 @@
-#include <cstring>
-#include <iostream>
-#include <memory>
+#include <string.h>
+
+#ifndef ARDUINO
+#include <memory.h>
+#endif
 
 #include "Protocol.h"
 
 constexpr char kHelloMessage[] = "HELO";
+constexpr char kStatusBeginMessage[] = "STAT";
+constexpr char kStatusEndMessage[] = "SEND";
 constexpr char kSwitchMessage[] = "SW";
 constexpr char kLedMessage[] = "LD";
 
-std::string ProtocolMessage::toString() const {
+string ProtocolMessage::toString() const {
+    char buf[2];
+    buf[1] = 0;
     switch (message_type_) {
     case MessageType::Hello:
         return kHelloMessage;    
+    case MessageType::StatusBegin:
+        return kStatusBeginMessage;
+    case MessageType::StatusEnd:
+        return kStatusEndMessage;
     case MessageType::SwitchOn:
-        return std::string(kSwitchMessage) + std::string(1, '0' + component_) + "1";
+        buf[0] = '0' + component_;
+        return string(kSwitchMessage) + string(buf) + "1";
     case MessageType::SwitchOff:
-        return std::string(kSwitchMessage) + std::string(1, '0' + component_) + "0";
+        buf[0] = '0' + component_;
+        return string(kSwitchMessage) + string(buf) + "0";
     case MessageType::LedOn:
-        return std::string(kLedMessage) + std::string(1, '0' + component_) + "1";
+        buf[0] = '0' + component_;
+        return string(kLedMessage) + string(buf) + "1";
     case MessageType::LedOff:
-        return std::string(kLedMessage) + std::string(1, '0' + component_) + "0";
+        buf[0] = '0' + component_;
+        return string(kLedMessage) + string(buf) + "0";
     default:
-        return std::string();
+        return string();
     }
 }
 
@@ -75,7 +89,6 @@ ProtocolMessage Protocol::parseMessage(int len) {
                       (input_buffer_[3] == '0') ? MessageType::LedOff : MessageType::LedOn,
                       input_buffer_[2] - '0');
     }
-
 
     return message;
 }
