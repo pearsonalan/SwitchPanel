@@ -16,7 +16,10 @@
 #include "framework.h"
 #include "winfx.h"
 #include "MainWindow.h"
+#include "Registry.h"
 #include "Resource.h"
+#include "Preferences.h"
+#include "PreferencesDialog.h"
 
 // we need commctrl v6 for LoadIconMetric()
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
@@ -47,9 +50,9 @@ void MainWindow::modifyWndClass(WNDCLASSEXW& wc) {
 	wc.hIconSm = ::LoadIcon(winfx::App::getSingleton().getInstance(), MAKEINTRESOURCE(IDI_AIRPLANE_GREEN));
 }
 
-bool MainWindow::create(LPWSTR pstrCmdLine, int nCmdShow) {
+bool MainWindow::createAppWindow(LPWSTR pstrCmdLine, int nCmdShow) {
 	// override create to always start hidden
-	return Window::create(pstrCmdLine, SW_HIDE);
+	return Window::createAppWindow(pstrCmdLine, SW_HIDE);
 }
 
 LRESULT MainWindow::handleWindowMessage(HWND hwndParam, UINT uMsg, 
@@ -76,6 +79,8 @@ LRESULT MainWindow::onCreate(HWND hwndParam, LPCREATESTRUCT lpCreateStruct) {
 		winfx::DebugOut(L"Failed to add notification icon\n");
 		return FALSE;
 	}
+
+	connectSerial();
 
 	return winfx::Window::onCreate(hwndParam, lpCreateStruct);
 }
@@ -105,6 +110,13 @@ void MainWindow::onTimer(HWND hwndParam, UINT idTimer) {
 
 void MainWindow::onCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify) {
 	switch (id) {
+	case IDM_PREFERENCES:
+		if (PreferencesDialog(this).doDialogBox() == IDOK) {
+			// Preferences may have changed, re-connect to serial port
+			//connectSerial();
+		}
+		break;
+
 	case IDM_ABOUT:
 		AboutDialog(this).doDialogBox();
 		break;
@@ -373,4 +385,64 @@ void MainWindow::onSimDisconnect() {
 	SetTimer(hwnd, ID_TIMER_SIM_CONNECT, kReconnectTimerIntervalMs, NULL);
 
 	InvalidateRect(hwnd, NULL, TRUE);
+}
+
+
+//
+// Serial Interface
+//
+
+void MainWindow::connectSerial() {
+	std::wstring com_port = kDefaultComPort;
+	int baud_rate = kDefaultBaudRate;
+
+	RegistryKey settings_key = RegistryKey::CurrentUser.openOrCreate(kRegistryKeyName);
+	if (settings_key != RegistryKey::InvalidKey) {
+		com_port = settings_key.getStringValueOrDefault(kPortRegistryValueName, kDefaultComPort);
+		baud_rate = settings_key.getIntegerValueOrDefault(kBaudRateRegistryValueName, kDefaultBaudRate);
+	}
+
+	//status_window_.setComPort(com_port);
+	//status_window_.setBaudRate(baud_rate);
+
+	std::wstring com_port_filename = std::wstring(L"\\\\.\\") + com_port;
+	serial_.setComPort(com_port_filename);
+	serial_.setBaudRate(baud_rate);
+	serial_.setNotificationSink(this);
+
+	HRESULT hr;
+	if (FAILED(hr = serial_.open())) {
+		wchar_t buffer[80];
+		swprintf_s(buffer, L"Could not open serial port. Error %08x", hr);
+		//status_window_.setStatusMessage(buffer);
+		winfx::DebugOut(L"%s\n", buffer);
+	}
+	else {
+		//status_window_.setStatusMessage(L"Connected");
+	}
+}
+
+void MainWindow::disconnectSerial() {
+	// Disconnect triggered by user.
+	serial_.close();
+	//status_window_.setStatusMessage(L"Disconnected");
+}
+
+void MainWindow::onReceivedData(const BYTE* data, int len) {
+	// Convert the bytes to Unicode wide chars
+	wchar_t buffer[kReadBufferSize + 1];
+	int chars_converted = MultiByteToWideChar(CP_OEMCP, MB_PRECOMPOSED,
+		(LPCCH)data, len, buffer, kReadBufferSize + 1);
+	if (chars_converted > 0) {
+		// Null terminate string
+		buffer[chars_converted] = L'\0';
+		winfx::DebugOut(L"MainWindow: SERIAL IN: %s", buffer);
+	}
+}
+
+void MainWindow::onDisconnected() {
+	// Disconnect notificaction from I/O failure.
+	winfx::DebugOut(L"MainWindow notified of Serial disconnect");
+	serial_.close();
+	//status_window_.setStatusMessage(L"Disconnected");
 }

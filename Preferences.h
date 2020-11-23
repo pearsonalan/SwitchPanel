@@ -15,24 +15,13 @@
 
 #pragma once
 
-#include "targetver.h"
-#define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
+// Name of the registry key under HKEY_CURRENT_USER
+constexpr wchar_t kRegistryKeyName[] = L"Software\\SwitchPanel";
 
-// Windows Header Files
-#include <windows.h>
-#include <windowsx.h>
-#include <shellapi.h>
-#include <commctrl.h>
+// Names for registry values
+constexpr wchar_t kPortRegistryValueName[] = L"Port";
+constexpr wchar_t kBaudRateRegistryValueName[] = L"BaudRate";
 
-// MSFS SimConnect Header Files
-#include <SimConnect.h>
-
-// C++ Header Files
-#include <cwchar>
-#include <string>
-#include <map>
-#include <vector>
-#include <cmath>
-#include <deque>
-#include <functional>
+// Default settings
+constexpr wchar_t kDefaultComPort[] = L"COM4";
+constexpr int kDefaultBaudRate = 9600;

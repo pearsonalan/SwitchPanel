@@ -149,7 +149,11 @@
   <ItemGroup>
     <ClInclude Include="framework.h" />
     <ClInclude Include="MainWindow.h" />
+    <ClInclude Include="Preferences.h" />
+    <ClInclude Include="PreferencesDialog.h" />
+    <ClInclude Include="Registry.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="Serial.h" />
     <ClInclude Include="SimData.h" />
     <ClInclude Include="SimInterface.h" />
     <ClInclude Include="SwitchPanelApp.h" />
@@ -165,6 +169,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MainWindow.cpp" />
+    <ClCompile Include="PreferencesDialog.cpp" />
+    <ClCompile Include="Registry.cpp" />
+    <ClCompile Include="Serial.cpp" />
     <ClCompile Include="SimInterface.cpp" />
     <ClCompile Include="SwitchPanelApp.cpp" />
     <ClCompile Include="winfx.cpp" />

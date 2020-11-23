@@ -19,7 +19,7 @@
 #include "Resource.h"
 
 bool SwitchPanelApp::initWindow(LPWSTR pwstrCmdLine, int nCmdShow) {
-	return mainWindow.create(pwstrCmdLine, nCmdShow);
+	return mainWindow.createAppWindow(pwstrCmdLine, nCmdShow);
 }
 
 SwitchPanelApp app;

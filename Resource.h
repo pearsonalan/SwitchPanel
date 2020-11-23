@@ -21,7 +21,12 @@
 #define IDS_CONNECTED               106
 #define IDS_INFLIGHT                107
 
+#define IDD_PREFERENCES		300
+#define IDC_COM_PORT        301
+#define IDC_BAUD_RATE       302
+
 #define IDM_EXIT					32000
+#define IDM_PREFERENCES				32061
 #define IDM_LANDING_LIGHTS_ON		33002
 #define IDM_LANDING_LIGHTS_OFF		33003
 #define IDM_TOGGLE_LANDING_LIGHTS	33004

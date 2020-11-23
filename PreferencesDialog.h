@@ -15,24 +15,13 @@
 
 #pragma once
 
-#include "targetver.h"
-#define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#include "framework.h"
+#include "winfx.h"
+#include "Resource.h"
 
-// Windows Header Files
-#include <windows.h>
-#include <windowsx.h>
-#include <shellapi.h>
-#include <commctrl.h>
-
-// MSFS SimConnect Header Files
-#include <SimConnect.h>
-
-// C++ Header Files
-#include <cwchar>
-#include <string>
-#include <map>
-#include <vector>
-#include <cmath>
-#include <deque>
-#include <functional>
+class PreferencesDialog : public winfx::Dialog {
+public:
+	PreferencesDialog(Window* pwnd) : winfx::Dialog(pwnd, IDD_PREFERENCES) {}
+	LRESULT onInitDialog(HWND hwndParam, HWND hwndFocus, LPARAM lParam) override;
+	void onOk() override;
+};

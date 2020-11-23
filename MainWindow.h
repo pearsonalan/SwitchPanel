@@ -18,23 +18,24 @@
 #include "framework.h"
 #include "winfx.h"
 #include "SimInterface.h"
+#include "Serial.h"
 #include "Resource.h"
 
 #define ID_TIMER_SIM_CONNECT 100
 #define ID_TIMER_POLL_SIM    101
 
-class MainWindow : public winfx::Window, public SimulatorCallbacks {
+class MainWindow : public winfx::Window, public SimulatorCallbacks, public SerialNotificationSink {
 public:
 	MainWindow() : 
 		winfx::Window(winfx::loadString(IDC_SWITCHPANELEX), winfx::loadString(IDS_APP_TITLE)) {
 		sim_.addCallback(this);
 	}
 
-	virtual void modifyWndClass(WNDCLASSEXW& wc) override;
-	virtual bool create(LPWSTR pstrCmdLine, int nCmdShow) override;
+	void modifyWndClass(WNDCLASSEXW& wc) override;
+	bool createAppWindow(LPWSTR pstrCmdLine, int nCmdShow) override;
 
-	virtual LRESULT handleWindowMessage(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) override;
-	virtual winfx::Size getDefaultWindowSize() override {
+	LRESULT handleWindowMessage(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) override;
+	winfx::Size getDefaultWindowSize() override {
 		return winfx::Size(400, 450);
 	}
 
@@ -43,6 +44,10 @@ public:
 	void onSimDataUpdated(const SimData* data) override;
 	void onStateChange(SimulatorInterfaceState state) override;
 	void onSimDisconnect() override;
+	
+	// Callbacks for SerialNotificationSink
+	void onReceivedData(const BYTE* data, int len) override;
+	void onDisconnected() override;
 
 protected:
 	BOOL AddNotificationIcon();
@@ -57,8 +62,12 @@ protected:
 	void onTimer(HWND hwnd, UINT idTimer);
 	void onNotifyCallback(HWND, UINT idNotify, winfx::Point point);
 
+	void connectSerial();
+	void disconnectSerial();
+
 private:
 	SimulatorInterface sim_;
+	Serial serial_;
 };
 
 class AboutDialog : public winfx::Dialog {
