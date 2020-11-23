@@ -34,8 +34,9 @@ private:
     int state_ = 0;
 };
 
-constexpr int kLEDCount = 8;
-constexpr int kSwitchCount = 8;
+// Max LED and Switch count is 8
+constexpr int kLEDCount = 2;
+constexpr int kSwitchCount = 2;
 
 class PanelClient {
 public:
@@ -54,8 +55,16 @@ private:
     long last_helo_timestamp_ = 0;
     long last_status_update_ = 0;
 
-    Switch* switches_[kSwitchCount] = { 0 };
-    LED* leds_[kLEDCount] = { 0 };
+    Switch* switches_[kSwitchCount] = { nullptr };
+    LED* leds_[kLEDCount] = { nullptr };
+
+    // Bits 0..7 correspond to the on/off state of switches 0..7
+    unsigned char switch_status_ = 0;
+
+    // Bits 0..7 indicate if the given switch state has been changed since
+    // the last report.  A 1 bit means that a swich on/off message needs to
+    // be generated for the given switch.
+    unsigned char switch_updated_ = 0;
 };
 
 #endif
