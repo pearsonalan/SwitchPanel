@@ -197,18 +197,35 @@ void TestBufferOverflow() {
     ProtocolResult result;
     ProtocolMessage message;
 
-    result = protocol.addBytes("abcdefghijklmnopqrstuvwxyz", 26);
+    result = protocol.addBytes("abcdefghijklmnopqrstuvwxyzabcd", 30);
     EXPECT(result == ProtocolResult::Ok);
-    EXPECT(protocol.inputBufferLength() == 26);
+    EXPECT(protocol.inputBufferLength() == 30);
     EXPECT(!protocol.hasMessage());
 
+    result = protocol.addBytes("abcdefghijklmnopqrstuvwxyz\n", 27);
+    EXPECT(result == ProtocolResult::BufferFull);
+    EXPECT(protocol.inputBufferLength() == 32);
+    EXPECT(protocol.hasMessage());
     message = protocol.getMessage();
     EXPECT(message.message_type() == MessageType::Invalid);
+    EXPECT(protocol.inputBufferLength() == 0);
 
-    result = protocol.addBytes("abcdefghijklmnopqrstuvwxyz", 26);
+    result = protocol.addBytes("abcdefghijklmnopqrstuvwxyzabcdefghij\n", 37);
     EXPECT(result == ProtocolResult::BufferFull);
-    EXPECT(protocol.inputBufferLength() == 26);
+    EXPECT(protocol.inputBufferLength() == 32);
+    EXPECT(protocol.hasMessage());
+    message = protocol.getMessage();
+    EXPECT(message.message_type() == MessageType::Invalid);
+    EXPECT(protocol.inputBufferLength() == 0);
+
+    protocol.addBytes("lvl0\n", 5);
+    EXPECT(protocol.hasMessage());
+    message = protocol.getMessage();
+    EXPECT(message.message_type() == MessageType::LogLevel);
+    EXPECT(message.arg() == 0);
+
     EXPECT(!protocol.hasMessage());
+    EXPECT(protocol.inputBufferLength() == 0);
 
     END_TEST();
 }

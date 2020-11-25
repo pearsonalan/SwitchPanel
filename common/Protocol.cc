@@ -52,13 +52,23 @@ string ProtocolMessage::toString() const {
     }
 }
 
+inline bool isEndChar(char c) {
+    return c == '\n' || c == '\r';
+}
+
 ProtocolResult Protocol::addBytes(const char* data, int len) {
-    if (input_buffer_len_ + len > kProtocolInputBufferLen) {
-        return ProtocolResult::BufferFull;
+    bool discarded_input = false;
+
+    for (int i = 0; i < len; i++) {
+        if (input_buffer_len_ < kProtocolInputBufferLen - 1) {
+            input_buffer_[input_buffer_len_++] = data[i];
+        } else if (isEndChar(data[i]) && input_buffer_len_ == kProtocolInputBufferLen - 1) {
+            input_buffer_[input_buffer_len_++] = data[i];
+        } else {
+            discarded_input = true;
+        }
     }
-    memcpy(input_buffer_ + input_buffer_len_, data, len);
-    input_buffer_len_ += len;
-    return ProtocolResult::Ok;
+    return discarded_input ? ProtocolResult::BufferFull : ProtocolResult::Ok;
 }
 
 char* Protocol::findMessageEnd() {
