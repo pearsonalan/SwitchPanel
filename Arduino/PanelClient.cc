@@ -1,6 +1,6 @@
 #include <Arduino.h>
+#include "LogLevel.h"
 #include "PanelClient.h"
-
 
 Switch::Switch(int id, int pin, PanelClient* panel_client) :
     id_(id), pin_(pin), state_(0), panel_client_(panel_client) {
@@ -15,9 +15,34 @@ void Switch::poll() {
     }
 }
 
+void FakeSwitch::poll() {
+    long now = millis();
+    if (random(1000) < 3) {
+        if (LOG_LEVEL(1)) {
+            Serial.print("# Fake switch: triggering switch stage chage at ");
+            Serial.println(now);
+        }
+        state_ = !state_;
+        panel_client_->switchUpdated(id_, state_);
+    }
+}
+
 LED::LED(int id, int pin, PanelClient* panel_client) :
     id_(id), pin_(pin), state_(0) {
     panel_client->addLED(this);
+    pinMode(pin, OUTPUT);
+}
+
+void LED::setState(int state) {
+    if (LOG_LEVEL(1)) {
+        Serial.print("# Setting state on LED ");
+        Serial.print(id_);
+        Serial.print(" to ");
+        Serial.println(state);
+    }
+
+    state_ = state;
+    digitalWrite(pin_, state_ ? HIGH : LOW);
 }
 
 void PanelClient::addSwitch(Switch* s) {
@@ -31,48 +56,93 @@ void PanelClient::addLED(LED* led) {
 void PanelClient::switchUpdated(int id, int state) {
     // turn the corresponding bit on or off 
     if (state == 0) {
-        switch_status_ = switch_status_ & ~((unsigned char)1 << id);
+        switch_status_ = switch_status_ & ~(1 << id);
     } else {
-        switch_status_ = switch_status_ | ((unsigned char)1 << id);
+        switch_status_ = switch_status_ | (1 << id);
     }
 
     // Mark the switch updated
-    switch_updated_ = switch_updated_ | ((unsigned char)1 << id);
+    switch_updated_ = switch_updated_ | (1 << id);
 
-    Serial.print("SWITCH UPDATE: sw=");
-    Serial.print(id);
-    Serial.print(", state=");
-    Serial.print(state);
-    Serial.print(": switch_status=");
-    Serial.print(switch_status_, 2);
-    Serial.print(", switch_updated=");
-    Serial.println(switch_updated_, 2);
-
+    if (LOG_LEVEL(1)) {
+        Serial.print("# SWITCH UPDATE: sw=");
+        Serial.print(id);
+        Serial.print(", state=");
+        Serial.print(state);
+        Serial.print(": switch_status=");
+        Serial.print(switch_status_, 2);
+        Serial.print(", switch_updated=");
+        Serial.println(switch_updated_, 2);
+    }
 }
 
 void PanelClient::processMessage(const ProtocolMessage& message) {
-    Serial.print("Got message: ");
-    Serial.println(message.toString());
-    
-    if (connected_) {
-
-    } else {
-        if (message.message_type() == MessageType::Hello) {
-            connected_ = true;
+    if (LOG_LEVEL(1)) {
+        Serial.print("# Got message: ");
+        if (message.message_type() == MessageType::Invalid) {
+            Serial.println("INVALID");
+        } else {
+            Serial.println(message.toString());
         }
+    }
+    
+    switch (message.message_type()) {
+    case MessageType::Hello: 
+        connected_ = true;
+        send_status_reports_ = true;
+        last_status_update_ = 0;
+        break;
+    case MessageType::LedOn:
+        if (message.component() >= 0 && message.component() < kLEDCount) {
+            leds_[message.component()]->setState(1);
+        }
+        break;
+    case MessageType::LedOff:
+        if (message.component() >= 0 && message.component() < kLEDCount) {
+            leds_[message.component()]->setState(0);
+        }
+        break;
+    case MessageType::LogLevel:
+        verbose_ = message.arg();
+        break;
+    case MessageType::StatusReportEnable:
+        send_status_reports_ = bool(message.arg());
+        if (LOG_LEVEL(1)) {
+            Serial.print("# Setting status_report_enable=");
+            Serial.print(send_status_reports_);
+        }
+        break;
     }
 }
 
 bool PanelClient::getMessage(ProtocolMessage* message) {
     long now = millis();
     if (connected_) {
-        if (now - last_status_update_ > 1000) {
+        if (send_status_reports_  && now - last_status_update_ > 5000) {
             *message = ProtocolMessage(MessageType::StatusBegin);
+            // Marking all switches as updated will cause a message to be send for every switch.
+            switch_updated_ = kAllSwitchFlags;
             last_status_update_ = now;
             return true;
         }
+
+        if ((switch_updated_ & kAllSwitchFlags) != 0) {
+            for (int i = 0; i < kSwitchCount; i++) {
+                if (switch_updated_ & (1 << i)) {
+                    int switch_status = (switch_status_ & (1 << i)) >> i;
+                    if (switch_status == 0) {
+                        *message = ProtocolMessage(MessageType::SwitchOff, i);
+                    } else {
+                        *message = ProtocolMessage(MessageType::SwitchOn, i);
+                    }
+
+                    switch_updated_ = switch_updated_ & ~(1 << i);
+                    return true;
+                }
+            }
+        }
     } else {
-        if (now - last_helo_timestamp_ > 1000) {
+        if (now - last_helo_timestamp_ > 5000) {
             // Time to say hello...
             *message = ProtocolMessage(MessageType::Hello);
             last_helo_timestamp_ = now;

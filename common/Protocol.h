@@ -18,6 +18,8 @@ enum class MessageType {
     SwitchOff,
     LedOn,
     LedOff,
+    LogLevel,
+    StatusReportEnable
 };
 
 enum class ProtocolResult {
@@ -38,6 +40,7 @@ public:
 
     MessageType message_type() const { return message_type_; }
     int component() const { return component_; }
+    int arg() const { return arg_; }
     string toString() const;
 
 private:
@@ -60,7 +63,10 @@ public:
 
     ProtocolMessage getMessage();
 
+    int inputBufferLength() const { return input_buffer_len_; }
+
 private:
+    char* findMessageEnd();
     ProtocolMessage parseMessage(int len);
     void discardMessage(int len);
 

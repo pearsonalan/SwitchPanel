@@ -6,15 +6,16 @@
 
 #include "Protocol.h"
 
-constexpr char kHelloMessage[] = "HELO";
-constexpr char kStatusBeginMessage[] = "STAT";
-constexpr char kStatusEndMessage[] = "SEND";
-constexpr char kSwitchMessage[] = "SW";
-constexpr char kLedMessage[] = "LD";
+constexpr char kHelloMessage[] = "helo";
+constexpr char kStatusBeginMessage[] = "stat";
+constexpr char kStatusEndMessage[] = "send";
+constexpr char kSwitchMessage[] = "sw";
+constexpr char kLedMessage[] = "ld";
+constexpr char kLogLevelMessage[] = "lvl";
+constexpr char kStatusReportEnableMessage[] = "sre";
 
 string ProtocolMessage::toString() const {
-    char buf[2];
-    buf[1] = 0;
+    char buf[4];
     switch (message_type_) {
     case MessageType::Hello:
         return kHelloMessage;    
@@ -24,16 +25,28 @@ string ProtocolMessage::toString() const {
         return kStatusEndMessage;
     case MessageType::SwitchOn:
         buf[0] = '0' + component_;
+        buf[1] = 0;
         return string(kSwitchMessage) + string(buf) + "1";
     case MessageType::SwitchOff:
         buf[0] = '0' + component_;
+        buf[1] = 0;
         return string(kSwitchMessage) + string(buf) + "0";
     case MessageType::LedOn:
         buf[0] = '0' + component_;
+        buf[1] = 0;
         return string(kLedMessage) + string(buf) + "1";
     case MessageType::LedOff:
         buf[0] = '0' + component_;
+        buf[1] = 0;
         return string(kLedMessage) + string(buf) + "0";
+    case MessageType::LogLevel:
+        buf[0] = '0' + arg_;
+        buf[1] = 0;
+        return string(kLogLevelMessage) + string(buf);
+    case MessageType::StatusReportEnable:
+        buf[0] = '0' + arg_;
+        buf[1] = 0;
+        return string(kStatusReportEnableMessage) + string(buf);
     default:
         return string();
     }
@@ -48,21 +61,34 @@ ProtocolResult Protocol::addBytes(const char* data, int len) {
     return ProtocolResult::Ok;
 }
 
+char* Protocol::findMessageEnd() {
+    // Look for a \n or \r character which marks the end of the message
+    char* message_end = nullptr;
+    for (int i = 0; i < input_buffer_len_; i++) {
+        if (input_buffer_[i] == '\n' || input_buffer_[i] == '\r') {
+            message_end = input_buffer_ + i;
+            break;
+        }
+    }
+    return message_end;
+}
+
 bool Protocol::hasMessage() {
-    return memchr(input_buffer_, '\n', input_buffer_len_) != nullptr;
+    return findMessageEnd() != nullptr;
 }
 
 ProtocolMessage Protocol::getMessage() {
     ProtocolMessage message;
-    // Look for a newline which marks the end of the message
-    char* message_end = static_cast<char*>(memchr(input_buffer_, '\n', input_buffer_len_));
+
+    char* message_end = findMessageEnd();
     if (message_end != nullptr) {
-        // Calculate the length of the message. This will not include the '\n' character.
+        // Calculate the length of the message. This will not include the END character.
         int message_len = message_end - input_buffer_;
         message = parseMessage(message_len);
-        // Discard what was parsed out of the buffer (including the '\n')
+        // Discard what was parsed out of the buffer (including the END character)
         discardMessage(message_len + 1);
     }
+
     return message;
 }
 
@@ -88,6 +114,16 @@ ProtocolMessage Protocol::parseMessage(int len) {
         message = ProtocolMessage(
                       (input_buffer_[3] == '0') ? MessageType::LedOff : MessageType::LedOn,
                       input_buffer_[2] - '0');
+    }
+    else if (len == 4 &&
+        memcmp(input_buffer_, kLogLevelMessage, 3) == 0 &&
+        isdigit(input_buffer_[3])) {
+        message = ProtocolMessage(MessageType::LogLevel, 0, input_buffer_[3] - '0');
+    }
+    else if (len == 4 &&
+        memcmp(input_buffer_, kStatusReportEnableMessage, 3) == 0 &&
+        isdigit(input_buffer_[3])) {
+        message = ProtocolMessage(MessageType::StatusReportEnable, 0, input_buffer_[3] - '0');
     }
 
     return message;

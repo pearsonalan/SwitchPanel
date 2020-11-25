@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <WString.h>
 
+#include "LogLevel.h"
 #include "Protocol.h"
 #include "PanelClient.h"
 
@@ -10,10 +11,12 @@ Protocol protocol;
 PanelClient panel_client;
 
 Switch switch0(0, 7, &panel_client);
-Switch switch1(1, 8, &panel_client);
+FakeSwitch switch1(1, 8, &panel_client);
 
-LED led0(0, 13, &panel_client);
-LED led1(1, 14, &panel_client);
+LED led0(0, 12, &panel_client);
+LED led1(1, 13, &panel_client);
+
+int verbose_ = 0;
 
 // Milliseconds between polling the switches
 constexpr long kSwitchPollInterval = 50;
@@ -32,9 +35,11 @@ void loop() {
     // read the incoming byte:
     char incomingByte = Serial.read();
 
-    // say what you got:
-    Serial.print("I received: ");
-    Serial.println(incomingByte, DEC);
+    // Output what was read
+    if (LOG_LEVEL(2)) {
+      Serial.print("# I received: ");
+      Serial.println(incomingByte, DEC);
+    }
     protocol.addBytes(&incomingByte, 1);
   }
 
@@ -45,7 +50,11 @@ void loop() {
   }
 
   // Poll switches if it is time to...
-  if (now - last_switch_poll_time > kSwitchPollInterval) {
+  if (now - last_switch_poll_time >= kSwitchPollInterval) {
+    if (LOG_LEVEL(2)) {
+      Serial.print("# Polling switches at ");
+      Serial.println(now);
+    }
     switch0.poll();
     switch1.poll();
     last_switch_poll_time = now;

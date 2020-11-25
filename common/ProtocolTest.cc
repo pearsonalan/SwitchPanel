@@ -21,11 +21,13 @@
 void TestMessageToString() {
     BEGIN_TEST();
     EXPECT(ProtocolMessage().toString() == "");
-    EXPECT(ProtocolMessage(MessageType::Hello).toString() == "HELO");
-    EXPECT(ProtocolMessage(MessageType::SwitchOn, 1).toString() == "SW11");
-    EXPECT(ProtocolMessage(MessageType::SwitchOff, 4).toString() == "SW40");
-    EXPECT(ProtocolMessage(MessageType::LedOn, 0).toString() == "LD01");
-    EXPECT(ProtocolMessage(MessageType::LedOff, 0).toString() == "LD00");
+    EXPECT(ProtocolMessage(MessageType::Hello).toString() == "helo");
+    EXPECT(ProtocolMessage(MessageType::SwitchOn, 1).toString() == "sw11");
+    EXPECT(ProtocolMessage(MessageType::SwitchOff, 4).toString() == "sw40");
+    EXPECT(ProtocolMessage(MessageType::LedOn, 0).toString() == "ld01");
+    EXPECT(ProtocolMessage(MessageType::LedOff, 0).toString() == "ld00");
+    EXPECT(ProtocolMessage(MessageType::LogLevel, 0, 1).toString() == "lvl1");
+    EXPECT(ProtocolMessage(MessageType::StatusReportEnable, 0, 1).toString() == "sre1");
     END_TEST();
 }
 
@@ -45,7 +47,7 @@ void TestHasMessage() {
     Protocol protocol;
 
     EXPECT(!protocol.hasMessage());
-    protocol.addBytes("SW", 2);
+    protocol.addBytes("sw", 2);
     EXPECT(!protocol.hasMessage());
     protocol.addBytes("01", 2);
     EXPECT(!protocol.hasMessage());
@@ -58,8 +60,54 @@ void TestHasMessage() {
 void TestParseMessage() {
     BEGIN_TEST();
     Protocol protocol;
+    ProtocolResult result;
+    ProtocolMessage message;
 
-    ProtocolResult result = protocol.addBytes("SW00\n", 5);
+
+    result = protocol.addBytes("sw00\n", 5);
+    EXPECT(result == ProtocolResult::Ok);
+    EXPECT(protocol.hasMessage());
+    message = protocol.getMessage();
+    EXPECT(message.message_type() == MessageType::SwitchOff);
+    EXPECT(message.component() == 0);
+    EXPECT(!protocol.hasMessage());
+
+    result = protocol.addBytes("lvl1\n", 5);
+    EXPECT(result == ProtocolResult::Ok);
+    EXPECT(protocol.hasMessage());
+    message = protocol.getMessage();
+    EXPECT(message.message_type() == MessageType::LogLevel);
+    EXPECT(message.component() == 0);
+    EXPECT(message.arg() == 1);
+    EXPECT(!protocol.hasMessage());
+
+    result = protocol.addBytes("sre0\n", 5);
+    EXPECT(result == ProtocolResult::Ok);
+    EXPECT(protocol.hasMessage());
+    message = protocol.getMessage();
+    EXPECT(message.message_type() == MessageType::StatusReportEnable);
+    EXPECT(message.component() == 0);
+    EXPECT(message.arg() == 0);
+    EXPECT(!protocol.hasMessage());
+
+    result = protocol.addBytes("sre1\n", 5);
+    EXPECT(result == ProtocolResult::Ok);
+    EXPECT(protocol.hasMessage());
+    message = protocol.getMessage();
+    EXPECT(message.message_type() == MessageType::StatusReportEnable);
+    EXPECT(message.component() == 0);
+    EXPECT(message.arg() == 1);
+    EXPECT(!protocol.hasMessage());
+
+    END_TEST();
+}
+
+// Same as above test but use \r to end message.
+void TestParseMessageCREnd() {
+    BEGIN_TEST();
+    Protocol protocol;
+
+    ProtocolResult result = protocol.addBytes("sw00\r", 5);
     EXPECT(result == ProtocolResult::Ok);
     EXPECT(protocol.hasMessage());
     ProtocolMessage message = protocol.getMessage();
@@ -78,11 +126,11 @@ void TestPartialMessages() {
     ProtocolResult result;
     ProtocolMessage message;
 
-    result = protocol.addBytes("HEL", 3);
+    result = protocol.addBytes("hel", 3);
     EXPECT(result == ProtocolResult::Ok);
     EXPECT(!protocol.hasMessage());
 
-    result = protocol.addBytes("O\n", 2);
+    result = protocol.addBytes("o\n", 2);
     EXPECT(result == ProtocolResult::Ok);
     EXPECT(protocol.hasMessage());
 
@@ -90,11 +138,11 @@ void TestPartialMessages() {
     EXPECT(message.message_type() == MessageType::Hello);
     EXPECT(!protocol.hasMessage());
 
-    result = protocol.addBytes("SW2", 3);
+    result = protocol.addBytes("sw2", 3);
     EXPECT(result == ProtocolResult::Ok);
     EXPECT(!protocol.hasMessage());
 
-    result = protocol.addBytes("1\nSW20\n", 7);
+    result = protocol.addBytes("1\nsw20\n", 7);
     EXPECT(result == ProtocolResult::Ok);
     EXPECT(protocol.hasMessage());
 
@@ -117,7 +165,7 @@ void TestMultipleMessages() {
     ProtocolResult result;
     ProtocolMessage message;
 
-    result = protocol.addBytes("HELO\nSW11\nLD91\n", 15);
+    result = protocol.addBytes("helo\nsw11\rld91\rlvl2\n", 20);
     EXPECT(result == ProtocolResult::Ok);
     EXPECT(protocol.hasMessage());
 
@@ -133,6 +181,33 @@ void TestMultipleMessages() {
     message = protocol.getMessage();
     EXPECT(message.message_type() == MessageType::LedOn);
     EXPECT(message.component() == 9);
+
+    message = protocol.getMessage();
+    EXPECT(message.message_type() == MessageType::LogLevel);
+    EXPECT(message.arg() == 2);
+
+    EXPECT(!protocol.hasMessage());
+
+    END_TEST();
+}
+
+void TestBufferOverflow() {
+    BEGIN_TEST();
+    Protocol protocol;
+    ProtocolResult result;
+    ProtocolMessage message;
+
+    result = protocol.addBytes("abcdefghijklmnopqrstuvwxyz", 26);
+    EXPECT(result == ProtocolResult::Ok);
+    EXPECT(protocol.inputBufferLength() == 26);
+    EXPECT(!protocol.hasMessage());
+
+    message = protocol.getMessage();
+    EXPECT(message.message_type() == MessageType::Invalid);
+
+    result = protocol.addBytes("abcdefghijklmnopqrstuvwxyz", 26);
+    EXPECT(result == ProtocolResult::BufferFull);
+    EXPECT(protocol.inputBufferLength() == 26);
     EXPECT(!protocol.hasMessage());
 
     END_TEST();
@@ -143,6 +218,8 @@ int main() {
     TestNoMessage();
     TestHasMessage(); 
     TestParseMessage();
+    TestParseMessageCREnd();
     TestPartialMessages();
     TestMultipleMessages();
+    TestBufferOverflow();
 }

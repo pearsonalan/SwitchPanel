@@ -13,11 +13,18 @@ public:
     int id() const { return id_; }
     int state() const { return state_; }
 
-private:
+protected:
     int id_;
     int pin_;
     int state_ = 0;
     PanelClient* panel_client_ = nullptr;
+};
+
+class FakeSwitch : public Switch {
+public:
+    FakeSwitch(int id, int pin, PanelClient* panel_client) :
+        Switch(id, pin, panel_client) {}
+    void poll();
 };
 
 class LED {
@@ -28,7 +35,7 @@ public:
     int id() const { return id_; }
     int state() const { return state_; }
     
-private:
+protected:
     int id_;
     int pin_;
     int state_ = 0;
@@ -37,6 +44,7 @@ private:
 // Max LED and Switch count is 8
 constexpr int kLEDCount = 2;
 constexpr int kSwitchCount = 2;
+constexpr unsigned char kAllSwitchFlags = 0b11;
 
 class PanelClient {
 public:
@@ -53,6 +61,11 @@ public:
 private:
     bool connected_ = false;
     long last_helo_timestamp_ = 0;
+
+    // If true, send periodic status reports
+    bool send_status_reports_ = true;
+
+    // Time in milliseconds of last status report
     long last_status_update_ = 0;
 
     Switch* switches_[kSwitchCount] = { nullptr };
