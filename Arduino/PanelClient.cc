@@ -92,6 +92,8 @@ void PanelClient::switchUpdated(int id, int state) {
 }
 
 void PanelClient::processMessage(const ProtocolMessage& message) {
+    int i;
+
     if (LOG_LEVEL(1)) {
         Serial.print("# Got message: ");
         if (message.message_type() == MessageType::Invalid) {
@@ -103,9 +105,16 @@ void PanelClient::processMessage(const ProtocolMessage& message) {
     
     switch (message.message_type()) {
     case MessageType::Hello: 
+        // Helo serves as a bit of a reset.
         connected_ = true;
         send_status_reports_ = true;
         last_status_update_ = 0;
+        in_status_report_ = false;
+        for (i =0; i < kLEDCount; i++) {
+            if (leds_[i] != nullptr) {
+                leds_[i]->setState(0);
+            }
+        }
         break;
     case MessageType::LedOn:
         if (message.component() >= 0 && message.component() < kLEDCount) {
@@ -119,12 +128,16 @@ void PanelClient::processMessage(const ProtocolMessage& message) {
         break;
     case MessageType::LogLevel:
         verbose_ = message.arg();
+        if (LOG_LEVEL(1)) {
+            Serial.print("# Set verbose=");
+            Serial.println(message.arg());
+        }
         break;
     case MessageType::StatusReportEnable:
         send_status_reports_ = bool(message.arg());
         if (LOG_LEVEL(1)) {
             Serial.print("# Setting status_report_enable=");
-            Serial.print(send_status_reports_);
+            Serial.println(send_status_reports_);
         }
         break;
     }
@@ -137,6 +150,7 @@ bool PanelClient::getMessage(ProtocolMessage* message) {
             *message = ProtocolMessage(MessageType::StatusBegin);
             // Marking all switches as updated will cause a message to be send for every switch.
             switch_updated_ = kAllSwitchFlags;
+            in_status_report_ = true;
             last_status_update_ = now;
             return true;
         }
@@ -155,6 +169,13 @@ bool PanelClient::getMessage(ProtocolMessage* message) {
                     return true;
                 }
             }
+        }
+
+        if (in_status_report_ && switch_updated_ == 0) {
+            // Got to the end of the report.
+            in_status_report_ = false;
+            *message = ProtocolMessage(MessageType::StatusEnd);
+            return true;
         }
     } else {
         if (now - last_helo_timestamp_ > 5000) {

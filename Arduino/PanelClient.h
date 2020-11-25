@@ -70,6 +70,9 @@ private:
     // If true, send periodic status reports
     bool send_status_reports_ = true;
 
+    // True when in the middle of a status report
+    bool in_status_report_ = false;
+
     // Time in milliseconds of last status report
     long last_status_update_ = 0;
 
