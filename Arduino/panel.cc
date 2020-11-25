@@ -10,11 +10,16 @@ using string = String;
 Protocol protocol;
 PanelClient panel_client;
 
-Switch switch0(0, 7, &panel_client);
-FakeSwitch switch1(1, 8, &panel_client);
+Switch switch0(0, 5, &panel_client);
+Switch switch1(1, 6, &panel_client);
+Switch switch2(2, 7, &panel_client);
 
-LED led0(0, 12, &panel_client);
-LED led1(1, 13, &panel_client);
+LED led0(0, 8, &panel_client);
+LED led1(1, 9, &panel_client);
+LED led2(2, 10, &panel_client);
+LED led3(3, 11, &panel_client);
+LED led4(4, 12, &panel_client);
+LED led5(5, 13, &panel_client);
 
 int verbose_ = 0;
 
@@ -55,8 +60,7 @@ void loop() {
       Serial.print("# Polling switches at ");
       Serial.println(now);
     }
-    switch0.poll();
-    switch1.poll();
+    panel_client.pollSwitches();
     last_switch_poll_time = now;
   }
 

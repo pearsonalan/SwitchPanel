@@ -3,6 +3,8 @@
 
 #include "Protocol.h"
 
+#define USE_FAKE_SWITCH     0
+
 class PanelClient;
 
 class Switch {
@@ -20,12 +22,14 @@ protected:
     PanelClient* panel_client_ = nullptr;
 };
 
+#if USE_FAKE_SWITCH
 class FakeSwitch : public Switch {
 public:
     FakeSwitch(int id, int pin, PanelClient* panel_client) :
         Switch(id, pin, panel_client) {}
     void poll();
 };
+#endif
 
 class LED {
 public:
@@ -42,15 +46,16 @@ protected:
 };
 
 // Max LED and Switch count is 8
-constexpr int kLEDCount = 2;
-constexpr int kSwitchCount = 2;
-constexpr unsigned char kAllSwitchFlags = 0b11;
+constexpr int kLEDCount = 6;
+constexpr int kSwitchCount = 3;
+constexpr unsigned char kAllSwitchFlags = 0b111;
 
 class PanelClient {
 public:
     void addSwitch(Switch* s);
     void addLED(LED* led);
 
+    void pollSwitches();
     void switchUpdated(int id, int state);
 
     void processMessage(const ProtocolMessage& message);

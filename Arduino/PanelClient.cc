@@ -5,6 +5,7 @@
 Switch::Switch(int id, int pin, PanelClient* panel_client) :
     id_(id), pin_(pin), state_(0), panel_client_(panel_client) {
     panel_client_->addSwitch(this);
+    pinMode(pin, INPUT);
 }
 
 void Switch::poll() {
@@ -15,6 +16,7 @@ void Switch::poll() {
     }
 }
 
+#if USE_FAKE_SWITCH
 void FakeSwitch::poll() {
     long now = millis();
     if (random(1000) < 3) {
@@ -26,6 +28,7 @@ void FakeSwitch::poll() {
         panel_client_->switchUpdated(id_, state_);
     }
 }
+#endif
 
 LED::LED(int id, int pin, PanelClient* panel_client) :
     id_(id), pin_(pin), state_(0) {
@@ -46,11 +49,23 @@ void LED::setState(int state) {
 }
 
 void PanelClient::addSwitch(Switch* s) {
-    switches_[s->id()] = s;
+    if (s->id() < kSwitchCount) {
+        switches_[s->id()] = s;
+    }
 }
 
 void PanelClient::addLED(LED* led) {
-    leds_[led->id()] = led;
+    if (led->id() < kLEDCount) {
+        leds_[led->id()] = led;
+    }
+}
+
+void PanelClient::pollSwitches() {
+    for (int i = 0; i < kSwitchCount; i++) {
+        if (switches_[i] != nullptr) {
+            switches_[i]->poll();
+        }
+    }
 }
 
 void PanelClient::switchUpdated(int id, int state) {
